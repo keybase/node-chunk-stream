@@ -16,7 +16,19 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
       chunk = Buffer.concat([@extra, chunk])
       @extra = null
 
-    remainder = chunk.length % @block_size
+    # skip a write if we don't have at least a full block
+    if chunk.length < @block_size
+      @extra = chunk
+      cb()
+      return
+
+    # calculate any remainder - guaranteed to be >= 0 since we wait for when len(chunk + extra) >= block_size
+    if @exact_chunking
+      remainder = chunk.length - @block_size
+    else
+      remainder = chunk.length % @block_size
+
+    # mangle the chunk into the proper length
     if remainder isnt 0
       @extra = chunk.slice(chunk.length-remainder)
       chunk = chunk.slice(0, chunk.length-remainder)
@@ -25,47 +37,11 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     cb()
 
   _flush : (cb) ->
+    # if we're doing exact chunking, it's possible we will have to write multiple flush chunks
+    while @exact_chunking and @extra and (@extra.length >= @block_size)
+      @push(@transform_func(@extra[...@block_size]))
+      @extra = @extra[@block_size...]
+
+    # push the very last (probably incomplete) chunk
     if @extra then @push(@transform_func(@extra))
     cb()
-
-
-###
-    # if we don't have enough data, push it all into extra and return
-    if @extra and (@extra.length + chunk.length) < @block_size
-      extra = Buffer.concat([@extra, chunk])
-      cb()
-      return
-
-    # concatenate any extra
-    if @extra
-      chunk = Buffer.concat([@extra, chunk])
-      @extra = null
-
-    # calculate any remainder - guaranteed to be >= 0 since we wait for when len(chunk + extra) >= block_size
-    if @exact_chunking
-      remainder = chunk.length - @block_size
-    else
-      remainder = chunk.length % @block_size
-
-    # mangle the buffer into either exactly block_size or a multiple of block_size
-    if remainder isnt 0
-      @extra = chunk[chunk.length-remainder...chunk.length]
-      chunk = chunk[0...chunk.length-remainder]
-
-    # do the transformation, and push out the chunk
-    @push(@transform_func(chunk))
-    cb()
-
-  _flush : (cb) ->
-    if @extra
-      # if we're doing exact chunking, it's possible we will have to write multiple flush chunks
-      if @exact_chunking
-        loop
-          push(@transform_func(@extra[0...@block_size]))
-          @extra = @extra[@block_size...]
-          break unless @extra.length == 0
-      # if we're not, just write out the last chunk
-      else
-        @push(@transform_func(@extra))
-    cb()
-###
