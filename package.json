@@ -1,0 +1,21 @@
+{
+  "name": "node-chunk-stream",
+  "version": "0.0.1",
+  "description": "A TransformStream implementation for applications where exact or exact-multiple chunk sizes are needed.",
+  "homepage": "https://github.com/keybase/node-chunk-stream",
+  "main": "./lib/main.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/keybase/node-chunk-stream.git"
+  },
+  "license": "BSD-3-Clause",
+  "dependencies": {
+    "iced-runtime": "^1.0.3"
+  },
+  "author": "Mark Cohen",
+  "devDependencies": {
+    "iced-coffee-script": "^108.0.9",
+    "iced-test": "^0.0.22",
+    "istanbul": "^0.4.0"
+  }
+}
