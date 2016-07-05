@@ -4,7 +4,7 @@ A TransformStream implementation for applications where exact or exact-multiple 
 
 ## Install
 
-	npm install chunk-stream
+	npm install keybase-chunk-stream
 
 ## Use cases
 
