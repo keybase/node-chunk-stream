@@ -60,14 +60,12 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     if @extra
       # if we're doing exact chunking, it's possible we will have to write multiple flush chunks
       if @exact_chunking
-        console.log('exact chunking')
         loop
           push(@transform_func(@extra[0...@block_size]))
           @extra = @extra[@block_size...]
           break unless @extra.length == 0
       # if we're not, just write out the last chunk
       else
-        console.log("flushing #{@extra}")
         @push(@transform_func(@extra))
     cb()
 ###
