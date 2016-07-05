@@ -6,7 +6,7 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
   # block_size: the chunk size
   # exact_chunking: boolean, specifies whether to pass chunks of exactly block_size or any multiple of block_size to transform_func
   constructor : (@transform_func, @block_size, @exact_chunking) ->
-    @extra = null
+    @extra = new Buffer('')
     # ensure that using exact_chunking doesn't result in an unnecessarily huge buffer
     highWaterMark = if @exact_chunking then @block_size else null
     super({highWaterMark})
@@ -19,9 +19,9 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
       return
 
     # concatenate any extra
-    if @extra
+    if @extra.length != 0
       chunk = Buffer.concat([@extra, chunk])
-      @extra = null
+      @extra = new Buffer('')
 
     # calculate any remainder - guaranteed to be >= 0 since we wait for when len(chunk + extra) >= block_size
     if @exact_chunking
