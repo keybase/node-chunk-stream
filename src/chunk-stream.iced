@@ -6,22 +6,40 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
   # block_size: the chunk size
   # exact_chunking: boolean, specifies whether to pass chunks of exactly block_size or any multiple of block_size to transform_func
   constructor : (@transform_func, @block_size, @exact_chunking) ->
-    @extra = new Buffer('')
+    @extra = null
     # ensure that using exact_chunking doesn't result in an unnecessarily huge buffer
     highWaterMark = if @exact_chunking then @block_size else null
     super({highWaterMark})
 
   _transform : (chunk, encoding, cb) ->
+    if @extra
+      chunk = Buffer.concat([@extra, chunk])
+      @extra = null
+
+    remainder = chunk.length % @block_size
+    if remainder isnt 0
+      @extra = chunk.slice(chunk.length-remainder)
+      chunk = chunk.slice(0, chunk.length-remainder)
+
+    @push(@transform_func(chunk))
+    cb()
+
+  _flush : (cb) ->
+    if @extra then @push(@transform_func(@extra))
+    cb()
+
+
+###
     # if we don't have enough data, push it all into extra and return
-    if (@extra.length + chunk.length) < @block_size
+    if @extra and (@extra.length + chunk.length) < @block_size
       extra = Buffer.concat([@extra, chunk])
       cb()
       return
 
     # concatenate any extra
-    if @extra.length != 0
+    if @extra
       chunk = Buffer.concat([@extra, chunk])
-      @extra = new Buffer('')
+      @extra = null
 
     # calculate any remainder - guaranteed to be >= 0 since we wait for when len(chunk + extra) >= block_size
     if @exact_chunking
@@ -39,13 +57,17 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     cb()
 
   _flush : (cb) ->
-    # if we're doing exact chunking, it's possible we will have to write multiple flush chunks
-    if @exact_chunking
-      loop
-        push(@transform_func(@extra[0...@block_size]))
-        @extra = @extra[@block_size...]
-        break unless @extra.length == 0
-
-    # if we're not, just write out the last chunk
-    else @push(@transform_func(@extra))
+    if @extra
+      # if we're doing exact chunking, it's possible we will have to write multiple flush chunks
+      if @exact_chunking
+        console.log('exact chunking')
+        loop
+          push(@transform_func(@extra[0...@block_size]))
+          @extra = @extra[@block_size...]
+          break unless @extra.length == 0
+      # if we're not, just write out the last chunk
+      else
+        console.log("flushing #{@extra}")
+        @push(@transform_func(@extra))
     cb()
+###
