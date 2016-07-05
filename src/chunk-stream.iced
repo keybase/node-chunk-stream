@@ -14,7 +14,7 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
   _transform : (chunk, encoding, cb) ->
     # if we don't have enough data, push it all into extra and return
     if (@extra.length + chunk.length) < @block_size
-      extra = Buffer.concat([@buffer, chunk])
+      extra = Buffer.concat([@extra, chunk])
       cb()
       return
 
