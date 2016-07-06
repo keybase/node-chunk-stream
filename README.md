@@ -21,6 +21,6 @@ This tool exposes a simple TransformStream implementation with some sugar. To cr
 
 	cstream = require('keybase-chunk-stream')
 	transform_func = (x) -> x
-	cs = new cstream.ChunkStream(transform_func, 4, false)
+	cs = new cstream.ChunkStream(transform_func, 2, false)
 
 Some notes here. First, `transform_func` must accept a buffer and return a buffer. The ChunkStream constructor's parameters, in order, are the transform function, the chunk size, and a boolean stating whether or not to use exact chunking (true for exact, false for modulo).
