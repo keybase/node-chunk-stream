@@ -5,11 +5,11 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
   # transform_func: accepts a buffer, returns a buffer. Used in the _trasform() method.
   # block_size: the chunk size
   # exact_chunking: boolean, specifies whether to pass chunks of exactly block_size or any multiple of block_size to transform_func
-  constructor : (@transform_func, @block_size, @exact_chunking) ->
+  constructor : (@transform_func, @block_size, @exact_chunking, {readableObjectMode, writableObjectMode}) ->
     @extra = null
     # ensure that using exact_chunking doesn't result in an unnecessarily huge buffer
     highWaterMark = if @exact_chunking then @block_size else null
-    super({highWaterMark})
+    super({highWaterMark, readableObjectMode, writableObjectMode})
 
   _transform : (chunk, encoding, cb) ->
     if @extra
@@ -28,7 +28,7 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     else
       remainder = chunk.length % @block_size
 
-    # mangle the chunk into the proper length
+    # wrangle the chunk into the proper length
     if remainder isnt 0
       @extra = chunk.slice(chunk.length-remainder)
       chunk = chunk.slice(0, chunk.length-remainder)
