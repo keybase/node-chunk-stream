@@ -1,6 +1,6 @@
 {
   "name": "keybase-chunk-stream",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "A TransformStream implementation for applications where exact or exact-multiple chunk sizes are needed.",
   "homepage": "https://github.com/keybase/node-chunk-stream",
   "main": "./lib/main.js",
