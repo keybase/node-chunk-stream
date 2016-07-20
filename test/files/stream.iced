@@ -34,19 +34,24 @@ iterative_pass_test = (limit, skip, f, opts, T, cb) ->
       pass.on('finish', defer())
       pass.end()
 
-    T.equal(expected, stb.getBuffer())
+    T.equal(expected, stb.getBuffer(), 'Streaming failed!')
   cb()
 
 noop = (x) -> x
 
+# so that we go well above the highWaterMark
+limit = 32768
+# some random large-ish prime to make tests a bit faster
+skip = 271
+
 exports.test_inexact_streaming = (T, cb) ->
-  await iterative_pass_test(32768, 271, noop, {block_size : crypto.prng(1)[0], exact_chunking : false, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  await iterative_pass_test(limit, skip, noop, {block_size : crypto.prng(1)[0], exact_chunking : false, writableObjectMode : false, readableObjectMode : false}, T, defer())
   cb()
 
 exports.test_exact_streaming = (T, cb) ->
-  await iterative_pass_test(32768, 271, noop, {block_size : crypto.prng(1)[0], exact_chunking : true, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  await iterative_pass_test(limit, skip, noop, {block_size : crypto.prng(1)[0], exact_chunking : true, writableObjectMode : false, readableObjectMode : false}, T, defer())
   cb()
 
 exports.test_writable_object_mode = (T, cb) ->
-  await iterative_pass_test(32768, 271, noop, {block_size : null, exact_chunking : null, writableObjectMode : true, readableObjectMode : false}, T, defer())
+  await iterative_pass_test(limit, skip, noop, {block_size : null, exact_chunking : null, writableObjectMode : true, readableObjectMode : false}, T, defer())
   cb()
