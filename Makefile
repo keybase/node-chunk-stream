@@ -12,6 +12,7 @@ lib/%.js: src/%.iced
 
 $(BUILD_STAMP): \
 	lib/chunk-stream.js \
+	lib/stream-to-buffer.js \
 	lib/main.js
 	date > $@
 
@@ -25,7 +26,7 @@ setup:
 coverage:
 	./node_modules/.bin/istanbul cover $(ICED) test/run.iced
 
-test: test-server
+test: test-server test-browser
 
 build: $(BUILD_STAMP)
 

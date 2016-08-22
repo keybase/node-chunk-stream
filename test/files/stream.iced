@@ -1,6 +1,6 @@
 crypto = require('crypto')
-to_buf = require('../../src/stream-to-buffer.iced')
-stream = require('../../src/chunk-stream.iced')
+to_buf = require('../../lib/stream-to-buffer.js')
+stream = require('../../lib/chunk-stream.js')
 
 stream_random_data = (strm, len, cb) ->
   written = 0

@@ -10,7 +10,9 @@
   },
   "license": "BSD-3-Clause",
   "dependencies": {
-    "iced-runtime": "^1.0.3"
+    "browserify": "^13.1.0",
+    "iced-runtime": "^1.0.3",
+    "icsify": "^0.7.0"
   },
   "author": "Mark Cohen",
   "devDependencies": {
