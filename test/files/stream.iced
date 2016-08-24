@@ -23,15 +23,15 @@ stream_random_data = (strm, len, cb) ->
 
   cb(Buffer.concat(expected_results))
 
-iterative_pass_test = (limit, skip, f, opts, T, cb) ->
+iterative_pass_test = (limit, skip, opts, T, cb) ->
   for i in [1..limit] by skip
-    pass = new stream.ChunkStream(f, opts)
+    pass = new stream.ChunkStream(opts)
     stb = new to_buf.StreamToBuffer()
     pass.pipe(stb)
 
     await stream_random_data(pass, i, defer(expected))
     await
-      pass.on('finish', defer())
+      stb.on('finish', defer())
       pass.end()
 
     T.equal(expected, stb.getBuffer(), 'Streaming failed!')
@@ -40,18 +40,30 @@ iterative_pass_test = (limit, skip, f, opts, T, cb) ->
 noop = (x) -> x
 
 # so that we go well above the highWaterMark
-limit = 32768
+limit = 32768*8
 # some random large-ish prime to make tests a bit faster
 skip = 271
 
 exports.test_inexact_streaming = (T, cb) ->
-  await iterative_pass_test(limit, skip, noop, {block_size : crypto.prng(1)[0], exact_chunking : false, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  start = new Date().getTime()
+  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : false, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  end = new Date().getTime()
+  time = end - start
+  console.log('Inexact time: ' + time)
   cb()
 
 exports.test_exact_streaming = (T, cb) ->
-  await iterative_pass_test(limit, skip, noop, {block_size : crypto.prng(1)[0], exact_chunking : true, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  start = new Date().getTime()
+  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : true, writableObjectMode : false, readableObjectMode : false}, T, defer())
+  end = new Date().getTime()
+  time = end - start
+  console.log('Exact time: ' + time)
   cb()
 
 exports.test_writable_object_mode = (T, cb) ->
-  await iterative_pass_test(limit, skip, noop, {block_size : null, exact_chunking : null, writableObjectMode : true, readableObjectMode : false}, T, defer())
+  start = new Date().getTime()
+  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : null, exact_chunking : null, writableObjectMode : true, readableObjectMode : false}, T, defer())
+  end = new Date().getTime()
+  time = end - start
+  console.log('Writable object time: ' + time)
   cb()

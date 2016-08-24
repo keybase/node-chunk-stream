@@ -11,9 +11,8 @@
   exports.ChunkStream = ChunkStream = (function(_super) {
     __extends(ChunkStream, _super);
 
-    function ChunkStream(transform_func, _arg) {
-      this.transform_func = transform_func;
-      this.block_size = _arg.block_size, this.exact_chunking = _arg.exact_chunking, this.writableObjectMode = _arg.writableObjectMode, this.readableObjectMode = _arg.readableObjectMode;
+    function ChunkStream(_arg) {
+      this.transform_func = _arg.transform_func, this.block_size = _arg.block_size, this.exact_chunking = _arg.exact_chunking, this.writableObjectMode = _arg.writableObjectMode, this.readableObjectMode = _arg.readableObjectMode;
       this.extra = null;
       ChunkStream.__super__.constructor.call(this, {
         writableObjectMode: this.writableObjectMode,
@@ -35,22 +34,26 @@
         this.extra = chunk;
       } else {
         if (this.exact_chunking) {
-          remainder = chunk.length - this.block_size;
+          while (chunk.length >= this.block_size) {
+            this.push(this.transform_func(chunk.slice(0, this.block_size)));
+            chunk = chunk.slice(this.block_size);
+          }
+          this.extra = chunk;
         } else {
           remainder = chunk.length % this.block_size;
+          if (remainder !== 0) {
+            this.extra = chunk.slice(chunk.length - remainder);
+            chunk = chunk.slice(0, chunk.length - remainder);
+          }
+          this.push(this.transform_func(chunk));
         }
-        if (remainder !== 0) {
-          this.extra = chunk.slice(chunk.length - remainder);
-          chunk = chunk.slice(0, chunk.length - remainder);
-        }
-        this.push(this.transform_func(chunk));
       }
       return cb();
     };
 
     ChunkStream.prototype._flush = function(cb) {
       if (!this.writableObjectMode) {
-        while (this.exact_chunking && this.extra && this.extra.length > this.block_size) {
+        while (this.exact_chunking && this.extra && this.extra.length >= this.block_size) {
           this.push(this.transform_func(this.extra.slice(0, this.block_size)));
           this.extra = this.extra.slice(this.block_size);
         }
@@ -25353,7 +25356,7 @@ stream_random_data = function(strm, len, cb) {
   })(this));
 };
 
-iterative_pass_test = function(limit, skip, f, opts, T, cb) {
+iterative_pass_test = function(limit, skip, opts, T, cb) {
   var expected, i, pass, stb, ___iced_passed_deferral, __iced_deferrals, __iced_k, _begin, _end, _positive;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
@@ -25388,7 +25391,7 @@ iterative_pass_test = function(limit, skip, f, opts, T, cb) {
           return _break();
         } else {
 
-          pass = new stream.ChunkStream(f, opts);
+          pass = new stream.ChunkStream(opts);
           stb = new to_buf.StreamToBuffer();
           pass.pipe(stb);
           (function(__iced_k) {
@@ -25409,7 +25412,7 @@ iterative_pass_test = function(limit, skip, f, opts, T, cb) {
               __iced_deferrals = new iced.Deferrals(__iced_k, {
                 parent: ___iced_passed_deferral
               });
-              pass.on('finish', __iced_deferrals.defer({
+              stb.on('finish', __iced_deferrals.defer({
                 lineno: 33
               }));
               pass.end();
@@ -25433,86 +25436,101 @@ noop = function(x) {
   return x;
 };
 
-limit = 32768;
+limit = 32768 * 8;
 
 skip = 271;
 
 exports.test_inexact_streaming = function(T, cb) {
-  var ___iced_passed_deferral, __iced_deferrals, __iced_k;
+  var end, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
+  start = new Date().getTime();
   (function(_this) {
     return (function(__iced_k) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral,
         funcname: "test_inexact_streaming"
       });
-      iterative_pass_test(limit, skip, noop, {
-        block_size: crypto.prng(1)[0],
+      iterative_pass_test(limit, skip, {
+        transform_func: noop,
+        block_size: crypto.randomBytes(1)[0],
         exact_chunking: false,
         writableObjectMode: false,
         readableObjectMode: false
       }, T, __iced_deferrals.defer({
-        lineno: 47
+        lineno: 48
       }));
       __iced_deferrals._fulfill();
     });
   })(this)((function(_this) {
     return function() {
+      end = new Date().getTime();
+      time = end - start;
+      console.log('Inexact time: ' + time);
       return cb();
     };
   })(this));
 };
 
 exports.test_exact_streaming = function(T, cb) {
-  var ___iced_passed_deferral, __iced_deferrals, __iced_k;
+  var end, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
+  start = new Date().getTime();
   (function(_this) {
     return (function(__iced_k) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral,
         funcname: "test_exact_streaming"
       });
-      iterative_pass_test(limit, skip, noop, {
-        block_size: crypto.prng(1)[0],
+      iterative_pass_test(limit, skip, {
+        transform_func: noop,
+        block_size: crypto.randomBytes(1)[0],
         exact_chunking: true,
         writableObjectMode: false,
         readableObjectMode: false
       }, T, __iced_deferrals.defer({
-        lineno: 51
+        lineno: 56
       }));
       __iced_deferrals._fulfill();
     });
   })(this)((function(_this) {
     return function() {
+      end = new Date().getTime();
+      time = end - start;
+      console.log('Exact time: ' + time);
       return cb();
     };
   })(this));
 };
 
 exports.test_writable_object_mode = function(T, cb) {
-  var ___iced_passed_deferral, __iced_deferrals, __iced_k;
+  var end, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
+  start = new Date().getTime();
   (function(_this) {
     return (function(__iced_k) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral,
         funcname: "test_writable_object_mode"
       });
-      iterative_pass_test(limit, skip, noop, {
+      iterative_pass_test(limit, skip, {
+        transform_func: noop,
         block_size: null,
         exact_chunking: null,
         writableObjectMode: true,
         readableObjectMode: false
       }, T, __iced_deferrals.defer({
-        lineno: 55
+        lineno: 64
       }));
       __iced_deferrals._fulfill();
     });
   })(this)((function(_this) {
     return function() {
+      end = new Date().getTime();
+      time = end - start;
+      console.log('Writable object time: ' + time);
       return cb();
     };
   })(this));
