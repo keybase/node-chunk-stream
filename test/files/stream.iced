@@ -22,10 +22,10 @@ stream_random_data = (strm, len, cb) ->
 
   cb(null, Buffer.concat(expected_results))
 
-iterative_pass_test = (T, limit, skip, opts, cb) ->
+iterative_pass_test = (T, {limit, skip, transform_func, block_size, exact_chunking, writableObjectMode, readableObjectMode}, cb) ->
   for i in [1..limit] by skip
     esc = make_esc(cb, "Error in pass test #{i}")
-    pass = new stream.ChunkStream(opts)
+    pass = new stream.ChunkStream({transform_func, block_size, exact_chunking, writableObjectMode, readableObjectMode})
     stb = new to_buf.StreamToBuffer()
     pass.pipe(stb)
 
@@ -34,32 +34,34 @@ iterative_pass_test = (T, limit, skip, opts, cb) ->
       stb.on('finish', defer())
       pass.end()
 
-    T.make_esc(cb, "Iteration #{i} failed")
     T.equal(expected, stb.getBuffer(), 'Streaming failed!')
   cb(null)
 
-noop = (x, cb) =>
+noop = (x, cb) ->
   cb(null, x)
 
-# so that we go well above the highWaterMark
-limit = 32768*8
-# some random large-ish prime to make tests a bit faster
-skip = 1987
-
-timed_test = (T, exact, writable, cb) ->
+timed_test = (T, {exact_chunking}, cb) ->
   esc = make_esc(cb, "Unknown error")
   start = new Date().getTime()
-  await iterative_pass_test(T, limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : exact, writableObjectMode : writable, readableObjectMode : false}, esc(defer()))
+
+  await iterative_pass_test(T, {
+    limit : 32768*8,
+    skip : 1987,
+    transform_func : noop,
+    block_size : crypto.randomBytes(1)[0],
+    exact_chunking,
+    readableObjectMode : false
+  }, esc(defer()))
+
   end = new Date().getTime()
   time = end - start
   console.log('Time: ' + time)
   cb(null)
 
 exports.test_inexact_streaming = (T, cb) ->
-  timed_test(T, false, false, cb)
+  await timed_test(T, {exact_chunking : false}, defer(err))
+  cb(err)
 
 exports.test_exact_streaming = (T, cb) ->
-  await timed_test(T, true, false, cb)
-
-exports.test_writable_object_mode = (T, cb) ->
-  await timed_test(T, true, true, cb)
+  await timed_test(T, {exact_chunking : true}, defer(err))
+  cb(err)

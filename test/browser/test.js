@@ -25,117 +25,81 @@
       });
     }
 
+    ChunkStream.prototype._transform_chunk = function(chunk, cb) {
+      var block, blocks, count, err, i, ___iced_passed_deferral, __iced_deferrals, __iced_k;
+      __iced_k = __iced_k_noop;
+      ___iced_passed_deferral = iced.findDeferral(arguments);
+      blocks = [];
+      (function(_this) {
+        return (function(__iced_k) {
+          var _i, _ref, _ref1;
+          __iced_deferrals = new iced.Deferrals(__iced_k, {
+            parent: ___iced_passed_deferral,
+            filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
+            funcname: "ChunkStream._transform_chunk"
+          });
+          count = 0;
+          for (i = _i = 0, _ref = chunk.length, _ref1 = _this.block_size; _ref1 > 0 ? _i < _ref : _i > _ref; i = _i += _ref1) {
+            block = chunk.slice(i, i + _this.block_size);
+            _this.transform_func(block, __iced_deferrals.defer({
+              assign_fn: (function(__slot_1, __slot_2) {
+                return function() {
+                  err = arguments[0];
+                  return __slot_1[__slot_2] = arguments[1];
+                };
+              })(blocks, count),
+              lineno: 16
+            }));
+            ++count;
+          }
+          __iced_deferrals._fulfill();
+        });
+      })(this)((function(_this) {
+        return function() {
+          blocks = Buffer.concat(blocks);
+          return cb(null, blocks);
+        };
+      })(this));
+    };
+
     ChunkStream.prototype._transform = function(chunk, encoding, cb) {
       var esc, out, remainder, ___iced_passed_deferral, __iced_deferrals, __iced_k;
       __iced_k = __iced_k_noop;
       ___iced_passed_deferral = iced.findDeferral(arguments);
-      esc = make_esc(cb, "Error in transform function");
+      if (this.extra != null) {
+        chunk = Buffer.concat([this.extra, chunk]);
+        this.extra = null;
+      }
+      if (chunk.length < this.block_size) {
+        this.extra = chunk;
+        return cb(null, new Buffer(''));
+      }
+      remainder = chunk.length % this.block_size;
+      if (remainder !== 0) {
+        this.extra = chunk.slice(chunk.length - remainder);
+        chunk = chunk.slice(0, chunk.length - remainder);
+      }
+      esc = make_esc(cb, "Failed to transform the chunk");
       (function(_this) {
         return (function(__iced_k) {
-          if (_this.writableObjectMode) {
-            (function(__iced_k) {
-              __iced_deferrals = new iced.Deferrals(__iced_k, {
-                parent: ___iced_passed_deferral,
-                filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-                funcname: "ChunkStream._transform"
-              });
-              _this.transform_func(chunk, esc(__iced_deferrals.defer({
-                assign_fn: (function() {
-                  return function() {
-                    return out = arguments[0];
-                  };
-                })(),
-                lineno: 14
-              })));
-              __iced_deferrals._fulfill();
-            })(function() {
-              _this.push(out);
-              return cb(null);
-              return __iced_k();
-            });
-          } else {
-            return __iced_k();
-          }
+          __iced_deferrals = new iced.Deferrals(__iced_k, {
+            parent: ___iced_passed_deferral,
+            filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
+            funcname: "ChunkStream._transform"
+          });
+          _this._transform_chunk(chunk, esc(__iced_deferrals.defer({
+            assign_fn: (function() {
+              return function() {
+                return out = arguments[0];
+              };
+            })(),
+            lineno: 41
+          })));
+          __iced_deferrals._fulfill();
         });
       })(this)((function(_this) {
         return function() {
-          if (_this.extra != null) {
-            chunk = Buffer.concat([_this.extra, chunk]);
-            _this.extra = null;
-          }
-          if (chunk.length < _this.block_size) {
-            _this.extra = chunk;
-            return cb(null);
-          }
-          if (_this.exact_chunking) {
-            (function(__iced_k) {
-              var _while;
-              _while = function(__iced_k) {
-                var _break, _continue, _next;
-                _break = __iced_k;
-                _continue = function() {
-                  return iced.trampoline(function() {
-                    return _while(__iced_k);
-                  });
-                };
-                _next = _continue;
-                if (!(chunk.length >= _this.block_size)) {
-                  return _break();
-                } else {
-                  (function(__iced_k) {
-                    __iced_deferrals = new iced.Deferrals(__iced_k, {
-                      parent: ___iced_passed_deferral,
-                      filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-                      funcname: "ChunkStream._transform"
-                    });
-                    _this.transform_func(chunk.slice(0, _this.block_size), esc(__iced_deferrals.defer({
-                      assign_fn: (function() {
-                        return function() {
-                          return out = arguments[0];
-                        };
-                      })(),
-                      lineno: 31
-                    })));
-                    __iced_deferrals._fulfill();
-                  })(function() {
-                    _this.push(out);
-                    return _next(chunk = chunk.slice(_this.block_size));
-                  });
-                }
-              };
-              _while(__iced_k);
-            })(function() {
-              _this.extra = chunk;
-              return cb(null);
-              return __iced_k();
-            });
-          } else {
-            remainder = chunk.length % _this.block_size;
-            if (remainder !== 0) {
-              _this.extra = chunk.slice(chunk.length - remainder);
-              chunk = chunk.slice(0, chunk.length - remainder);
-            }
-            (function(__iced_k) {
-              __iced_deferrals = new iced.Deferrals(__iced_k, {
-                parent: ___iced_passed_deferral,
-                filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-                funcname: "ChunkStream._transform"
-              });
-              _this.transform_func(chunk, esc(__iced_deferrals.defer({
-                assign_fn: (function() {
-                  return function() {
-                    return out = arguments[0];
-                  };
-                })(),
-                lineno: 44
-              })));
-              __iced_deferrals._fulfill();
-            })(function() {
-              _this.push(out);
-              return cb(null);
-              return __iced_k();
-            });
-          }
+          return cb(null, out);
         };
       })(this));
     };
@@ -145,74 +109,31 @@
     };
 
     ChunkStream.prototype._flush = function(cb) {
-      var esc, out, ___iced_passed_deferral, __iced_deferrals, __iced_k;
+      var esc, out_blocks, out_flush, out_short, ___iced_passed_deferral, __iced_deferrals, __iced_k;
       __iced_k = __iced_k_noop;
       ___iced_passed_deferral = iced.findDeferral(arguments);
-      esc = make_esc(cb, "Error in transform function");
+      esc = make_esc(cb, "Failed to flush");
       (function(_this) {
         return (function(__iced_k) {
-          if (!_this.writableObjectMode) {
+          var _ref;
+          if (((_ref = _this.extra) != null ? _ref.length : void 0) >= _this.block_size) {
             (function(__iced_k) {
-              var _while;
-              _while = function(__iced_k) {
-                var _break, _continue, _next;
-                _break = __iced_k;
-                _continue = function() {
-                  return iced.trampoline(function() {
-                    return _while(__iced_k);
-                  });
-                };
-                _next = _continue;
-                if (!(_this.exact_chunking && _this.extra && _this.extra.length >= _this.block_size)) {
-                  return _break();
-                } else {
-                  (function(__iced_k) {
-                    __iced_deferrals = new iced.Deferrals(__iced_k, {
-                      parent: ___iced_passed_deferral,
-                      filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-                      funcname: "ChunkStream._flush"
-                    });
-                    _this.transform_func(_this.extra.slice(0, _this.block_size), esc(__iced_deferrals.defer({
-                      assign_fn: (function() {
-                        return function() {
-                          return out = arguments[0];
-                        };
-                      })(),
-                      lineno: 57
-                    })));
-                    __iced_deferrals._fulfill();
-                  })(function() {
-                    _this.push(out);
-                    return _next(_this.extra = _this.extra.slice(_this.block_size));
-                  });
-                }
-              };
-              _while(__iced_k);
+              __iced_deferrals = new iced.Deferrals(__iced_k, {
+                parent: ___iced_passed_deferral,
+                filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
+                funcname: "ChunkStream._flush"
+              });
+              _this._transform_chunk(_this.extra, esc(__iced_deferrals.defer({
+                assign_fn: (function() {
+                  return function() {
+                    return out_blocks = arguments[0];
+                  };
+                })(),
+                lineno: 54
+              })));
+              __iced_deferrals._fulfill();
             })(function() {
-              (function(__iced_k) {
-                if (_this.extra && _this.extra.length !== 0) {
-                  (function(__iced_k) {
-                    __iced_deferrals = new iced.Deferrals(__iced_k, {
-                      parent: ___iced_passed_deferral,
-                      filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-                      funcname: "ChunkStream._flush"
-                    });
-                    _this.transform_func(_this.extra, esc(__iced_deferrals.defer({
-                      assign_fn: (function() {
-                        return function() {
-                          return out = arguments[0];
-                        };
-                      })(),
-                      lineno: 63
-                    })));
-                    __iced_deferrals._fulfill();
-                  })(function() {
-                    return __iced_k(_this.push(out));
-                  });
-                } else {
-                  return __iced_k();
-                }
-              })(__iced_k);
+              return __iced_k(typeof out_blocks !== "undefined" && out_blocks !== null ? _this.push(out_blocks) : void 0);
             });
           } else {
             return __iced_k();
@@ -221,25 +142,51 @@
       })(this)((function(_this) {
         return function() {
           (function(__iced_k) {
-            __iced_deferrals = new iced.Deferrals(__iced_k, {
-              parent: ___iced_passed_deferral,
-              filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
-              funcname: "ChunkStream._flush"
-            });
-            _this._flush_append(esc(__iced_deferrals.defer({
-              assign_fn: (function() {
-                return function() {
-                  return out = arguments[0];
-                };
-              })(),
-              lineno: 66
-            })));
-            __iced_deferrals._fulfill();
-          })(function() {
-            if (typeof out !== "undefined" && out !== null) {
-              _this.push(out);
+            var _ref;
+            if (((_ref = _this.extra) != null ? _ref.length : void 0) !== 0) {
+              (function(__iced_k) {
+                __iced_deferrals = new iced.Deferrals(__iced_k, {
+                  parent: ___iced_passed_deferral,
+                  filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
+                  funcname: "ChunkStream._flush"
+                });
+                _this.transform_func(_this.extra, esc(__iced_deferrals.defer({
+                  assign_fn: (function() {
+                    return function() {
+                      return out_short = arguments[0];
+                    };
+                  })(),
+                  lineno: 60
+                })));
+                __iced_deferrals._fulfill();
+              })(function() {
+                return __iced_k(typeof out_short !== "undefined" && out_short !== null ? _this.push(out_short) : void 0);
+              });
+            } else {
+              return __iced_k();
             }
-            return cb(null);
+          })(function() {
+            (function(__iced_k) {
+              __iced_deferrals = new iced.Deferrals(__iced_k, {
+                parent: ___iced_passed_deferral,
+                filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
+                funcname: "ChunkStream._flush"
+              });
+              _this._flush_append(esc(__iced_deferrals.defer({
+                assign_fn: (function() {
+                  return function() {
+                    return out_flush = arguments[0];
+                  };
+                })(),
+                lineno: 65
+              })));
+              __iced_deferrals._fulfill();
+            })(function() {
+              if (typeof out_flush !== "undefined" && out_flush !== null) {
+                _this.push(out_flush);
+              }
+              return cb(null);
+            });
           });
         };
       })(this));
@@ -26306,7 +26253,7 @@ window.onload = function() {
 
 },{"../files/stream.iced":169,"iced-runtime":110,"iced-test":112}],169:[function(require,module,exports){
 (function (Buffer){
-var crypto, iced, iterative_pass_test, limit, make_esc, noop, skip, stream, stream_random_data, timed_test, to_buf, __iced_k, __iced_k_noop;
+var crypto, iced, iterative_pass_test, make_esc, noop, stream, stream_random_data, timed_test, to_buf, __iced_k, __iced_k_noop;
 
 iced = require('iced-runtime');
 __iced_k = __iced_k_noop = function() {};
@@ -26400,10 +26347,11 @@ stream_random_data = function(strm, len, cb) {
   })(this));
 };
 
-iterative_pass_test = function(T, limit, skip, opts, cb) {
-  var esc, expected, i, pass, stb, ___iced_passed_deferral, __iced_deferrals, __iced_k, _begin, _end, _positive;
+iterative_pass_test = function(T, _arg, cb) {
+  var block_size, esc, exact_chunking, expected, i, limit, pass, readableObjectMode, skip, stb, transform_func, writableObjectMode, ___iced_passed_deferral, __iced_deferrals, __iced_k, _begin, _end, _positive;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
+  limit = _arg.limit, skip = _arg.skip, transform_func = _arg.transform_func, block_size = _arg.block_size, exact_chunking = _arg.exact_chunking, writableObjectMode = _arg.writableObjectMode, readableObjectMode = _arg.readableObjectMode;
   (function(_this) {
     return (function(__iced_k) {
       var _i, _results, _while;
@@ -26436,7 +26384,13 @@ iterative_pass_test = function(T, limit, skip, opts, cb) {
         } else {
 
           esc = make_esc(cb, "Error in pass test " + i);
-          pass = new stream.ChunkStream(opts);
+          pass = new stream.ChunkStream({
+            transform_func: transform_func,
+            block_size: block_size,
+            exact_chunking: exact_chunking,
+            writableObjectMode: writableObjectMode,
+            readableObjectMode: readableObjectMode
+          });
           stb = new to_buf.StreamToBuffer();
           pass.pipe(stb);
           (function(__iced_k) {
@@ -26463,7 +26417,6 @@ iterative_pass_test = function(T, limit, skip, opts, cb) {
               pass.end();
               __iced_deferrals._fulfill();
             })(function() {
-              T.make_esc(cb, "Iteration " + i + " failed");
               return _next(T.equal(expected, stb.getBuffer(), 'Streaming failed!'));
             });
           });
@@ -26478,15 +26431,9 @@ iterative_pass_test = function(T, limit, skip, opts, cb) {
   })(this));
 };
 
-noop = (function(_this) {
-  return function(x, cb) {
-    return cb(null, x);
-  };
-})(this);
-
-limit = 32768 * 8;
-
-skip = 1987;
+noop = function(x, cb) {
+  return cb(null, x);
+};
 
 timed_test = function(T, exact, writable, cb) {
   var end, esc, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
@@ -26499,14 +26446,16 @@ timed_test = function(T, exact, writable, cb) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral
       });
-      iterative_pass_test(T, limit, skip, {
+      iterative_pass_test(T, {
+        limit: 32768 * 8,
+        skip: 1987,
         transform_func: noop,
         block_size: crypto.randomBytes(1)[0],
         exact_chunking: exact,
         writableObjectMode: writable,
         readableObjectMode: false
       }, esc(__iced_deferrals.defer({
-        lineno: 51
+        lineno: 54
       })));
       __iced_deferrals._fulfill();
     });
@@ -26536,7 +26485,7 @@ exports.test_inexact_streaming = function(T, cb) {
             return err = arguments[0];
           };
         })(),
-        lineno: 58
+        lineno: 62
       }));
       __iced_deferrals._fulfill();
     });
@@ -26563,7 +26512,7 @@ exports.test_exact_streaming = function(T, cb) {
             return err = arguments[0];
           };
         })(),
-        lineno: 62
+        lineno: 66
       }));
       __iced_deferrals._fulfill();
     });
@@ -26590,7 +26539,7 @@ exports.test_writable_object_mode = function(T, cb) {
             return err = arguments[0];
           };
         })(),
-        lineno: 66
+        lineno: 70
       }));
       __iced_deferrals._fulfill();
     });

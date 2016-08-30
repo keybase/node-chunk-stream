@@ -7,15 +7,20 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     @extra = null
     super({@writableObjectMode, @readableObjectMode})
 
+  # chunk must be guaranteed to be a multiple of the block size
+  _transform_chunk : (chunk, cb) ->
+    blocks = []
+    await
+      count = 0
+      for i in [0...chunk.length] by @block_size
+        block = chunk[i...i+@block_size]
+        @transform_func(block, defer(err, blocks[count]))
+        ++count
+    blocks = Buffer.concat(blocks)
+    cb(null, blocks)
+
+
   _transform : (chunk, encoding, cb) ->
-    esc = make_esc(cb, "Error in transform function")
-
-    # if we're processing objects, just go one at a time, ignoring everything else
-    if @writableObjectMode
-      await @transform_func(chunk, esc(defer(out)))
-      @push(out)
-      return cb(null)
-
     # prepend any extra
     if @extra?
       chunk = Buffer.concat([@extra, chunk])
@@ -24,47 +29,42 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     # if we don't have a full block, dump everything into extra and skip this round
     if chunk.length < @block_size
       @extra = chunk
-      return cb(null)
+      return cb(null, new Buffer(''))
 
-    # if we have to, call the transform function multiple times until we have less than a block size remaining
-    if @exact_chunking
-      while chunk.length >= @block_size
-        await @transform_func(chunk[...@block_size], esc(defer(out)))
-        @push(out)
-        chunk = chunk[@block_size...]
-      @extra = chunk
-      return cb(null)
+    # next, mangle the chunk so that it is an even multiple of the block size
+    remainder = chunk.length % @block_size
+    if remainder isnt 0
+      @extra = chunk[chunk.length-remainder...]
+      chunk = chunk[...chunk.length-remainder]
 
-    # if the transform function can accept chunks of length block_size*n for n \in N, just make one transform function call
-    else
-      remainder = chunk.length % @block_size
-      # chop off extra
-      if remainder isnt 0
-        @extra = chunk[chunk.length-remainder...]
-        chunk = chunk[...chunk.length-remainder]
-      await @transform_func(chunk, esc(defer(out)))
-      @push(out)
-      return cb(null)
+    # finally, process the chunk (guaranteed to be the correct length)
+    esc = make_esc(cb, "Failed to transform the chunk")
+    await @_transform_chunk(chunk, esc(defer(out)))
+    cb(null, out)
+
 
   # this is to be overridden by subclasses who want to output something else after the chunking is over
   _flush_append : (cb) ->
     return cb(null, null)
 
   _flush : (cb) ->
-    esc = make_esc(cb, "Error in transform function")
-    unless @writableObjectMode
-      # if we're in exact chunking mode, handle potentially multiple blocks of data in @extra
-      while @exact_chunking and @extra and @extra.length >= @block_size
-        await @transform_func(@extra[...@block_size], esc(defer(out)))
-        @push(out)
-        @extra = @extra[@block_size...]
+    esc = make_esc(cb, "Failed to flush")
 
-      # either way, write out one final block (length guaranteed <= @block_size)
-      if @extra and @extra.length isnt 0
-        await @transform_func(@extra, esc(defer(out)))
-        @push(out)
+    # potentially deal with multiple flushed blocks
+    if @extra?.length >= @block_size
+      await @_transform_chunk(@extra, esc(defer(out_blocks)))
+      if out_blocks?
+        @push(out_blocks)
 
-    await @_flush_append(esc(defer(out)))
-    if out? then @push(out)
+    # either way, write out one final block (length guaranteed <= @block_size)
+    if @extra?.length isnt 0
+      await @transform_func(@extra, esc(defer(out_short)))
+      if out_short?
+        @push(out_short)
+
+    # allow subclasses to push something out at the very very end
+    await @_flush_append(esc(defer(out_flush)))
+    if out_flush?
+      @push(out_flush)
 
     return cb(null)
