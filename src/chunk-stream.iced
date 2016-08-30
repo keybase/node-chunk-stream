@@ -8,47 +8,47 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     super({@writableObjectMode, @readableObjectMode})
 
   _transform : (chunk, encoding, cb) ->
-    # if we're processing objects, just go one at a time, ignoring everything else
     esc = make_esc(cb, "Error in transform function")
 
+    # if we're processing objects, just go one at a time, ignoring everything else
     if @writableObjectMode
       await @transform_func(chunk, esc(defer(out)))
       @push(out)
       return cb(null)
 
+    # prepend any extra
+    if @extra?
+      chunk = Buffer.concat([@extra, chunk])
+      @extra = null
+
+    # if we don't have a full block, dump everything into extra and skip this round
+    if chunk.length < @block_size
+      @extra = chunk
+      return cb(null)
+
+    # if we have to, call the transform function multiple times until we have less than a block size remaining
+    if @exact_chunking
+      while chunk.length >= @block_size
+        await @transform_func(chunk[...@block_size], esc(defer(out)))
+        @push(out)
+        chunk = chunk[@block_size...]
+      @extra = chunk
+      return cb(null)
+
+    # if the transform function can accept chunks of length block_size*n for n \in N, just make one transform function call
     else
-      # prepend any extra
-      if @extra?
-        chunk = Buffer.concat([@extra, chunk])
-        @extra = null
-
-      # if we don't have a full block, dump everything into extra and skip this round
-      if chunk.length < @block_size
-        @extra = chunk
-      else
-        # if we have to, call the transform function multiple times until we have less than a block size remaining
-        if @exact_chunking
-          while chunk.length >= @block_size
-            await @transform_func(chunk, esc(defer(out)))
-            @push(out)
-            chunk = chunk[@block_size...]
-          @extra = chunk
-          return cb(null)
-
-        # if the transform function can accept chunks of length block_size*n for n \in N, just make one transform function call
-        else
-          remainder = chunk.length % @block_size
-          # chop off extra
-          if remainder isnt 0
-            @extra = chunk[chunk.length-remainder...]
-            chunk = chunk[...chunk.length-remainder]
-          await @transform_func(chunk, esc(defer(out)))
-          @push(out)
-          return cb(null)
+      remainder = chunk.length % @block_size
+      # chop off extra
+      if remainder isnt 0
+        @extra = chunk[chunk.length-remainder...]
+        chunk = chunk[...chunk.length-remainder]
+      await @transform_func(chunk, esc(defer(out)))
+      @push(out)
+      return cb(null)
 
   # this is to be overridden by subclasses who want to output something else after the chunking is over
   _flush_append : (cb) ->
-    return cb(null)
+    return cb(null, null)
 
   _flush : (cb) ->
     esc = make_esc(cb, "Error in transform function")

@@ -1,69 +1,65 @@
 crypto = require('crypto')
-to_buf = require('../../lib/stream-to-buffer.js')
-stream = require('../../lib/chunk-stream.js')
+stream = require('../..')
+to_buf = stream.util
+{make_esc} = require('iced-error')
 
 stream_random_data = (strm, len, cb) ->
+  esc = make_esc(cb, "Error in stream writing")
   written = 0
   expected_results = []
   while written < len
     # generate random length
-    await crypto.randomBytes(1, defer(err, index))
-    if err then throw err
+    await crypto.randomBytes(1, esc(defer(index)))
     amt = (index[0] + 1)*16
 
     # generate random bytes of length amt
-    await crypto.randomBytes(amt, defer(err, buf))
-    if err then throw err
+    await crypto.randomBytes(amt, esc(defer(buf)))
     written += buf.length
     expected_results.push(buf)
 
     # write the buffer
-    await strm.write(buf, defer(err))
-    if err then throw err
+    await strm.write(buf, 'utf-8', esc(defer()))
 
-  cb(Buffer.concat(expected_results))
+  cb(null, Buffer.concat(expected_results))
 
-iterative_pass_test = (limit, skip, opts, T, cb) ->
+iterative_pass_test = (T, limit, skip, opts, cb) ->
   for i in [1..limit] by skip
+    esc = make_esc(cb, "Error in pass test #{i}")
     pass = new stream.ChunkStream(opts)
     stb = new to_buf.StreamToBuffer()
     pass.pipe(stb)
 
-    await stream_random_data(pass, i, defer(expected))
+    await stream_random_data(pass, i, esc(defer(expected)))
     await
       stb.on('finish', defer())
       pass.end()
 
+    T.make_esc(cb, "Iteration #{i} failed")
     T.equal(expected, stb.getBuffer(), 'Streaming failed!')
-  cb()
+  cb(null)
 
-noop = (x) -> x
+noop = (x, cb) =>
+  cb(null, x)
 
 # so that we go well above the highWaterMark
 limit = 32768*8
 # some random large-ish prime to make tests a bit faster
-skip = 271
+skip = 1987
+
+timed_test = (T, exact, writable, cb) ->
+  esc = make_esc(cb, "Unknown error")
+  start = new Date().getTime()
+  await iterative_pass_test(T, limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : exact, writableObjectMode : writable, readableObjectMode : false}, esc(defer()))
+  end = new Date().getTime()
+  time = end - start
+  console.log('Time: ' + time)
+  cb(null)
 
 exports.test_inexact_streaming = (T, cb) ->
-  start = new Date().getTime()
-  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : false, writableObjectMode : false, readableObjectMode : false}, T, defer())
-  end = new Date().getTime()
-  time = end - start
-  console.log('Inexact time: ' + time)
-  cb()
+  timed_test(T, false, false, cb)
 
 exports.test_exact_streaming = (T, cb) ->
-  start = new Date().getTime()
-  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : crypto.randomBytes(1)[0], exact_chunking : true, writableObjectMode : false, readableObjectMode : false}, T, defer())
-  end = new Date().getTime()
-  time = end - start
-  console.log('Exact time: ' + time)
-  cb()
+  await timed_test(T, true, false, cb)
 
 exports.test_writable_object_mode = (T, cb) ->
-  start = new Date().getTime()
-  await iterative_pass_test(limit, skip, {transform_func: noop, block_size : null, exact_chunking : null, writableObjectMode : true, readableObjectMode : false}, T, defer())
-  end = new Date().getTime()
-  time = end - start
-  console.log('Writable object time: ' + time)
-  cb()
+  await timed_test(T, true, true, cb)
