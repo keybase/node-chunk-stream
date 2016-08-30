@@ -20,7 +20,5 @@ The two most obvious use cases are for ASCII armoring (which uses modulo chunkin
 This tool exposes a simple TransformStream implementation with some sugar. To create a ChunkStream that simply passes through data without modification in chunks of even length:
 
 	cstream = require('keybase-chunk-stream')
-	transform_func = (x) -> x
-	cs = new cstream.ChunkStream(transform_func, 2, false)
-
-Some notes here. First, `transform_func` must accept a buffer and return a buffer. The ChunkStream constructor's parameters, in order, are the transform function, the chunk size, and a boolean stating whether or not to use exact chunking (true for exact, false for modulo).
+	transform_func = (x, cb) -> cb(null, x)
+	cs = new cstream.ChunkStream({transform_func, block_size :  2, exact_chunking : false})
