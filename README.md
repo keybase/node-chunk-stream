@@ -8,15 +8,7 @@ A TransformStream implementation for applications where exact or exact-multiple 
 
 ## Use cases
 
-This tool was created for situations where you, as a stream consumer, need to modify data on a chunk-by-chunk basis. This can be accomplished in two ways:
-
-1) exact chunking: data will be processed in chunks of precisely one size
-
-2) inexact chunking: data will be processed in multiples of the chunk size
-
-Of course, the last chunk is usually smaller than the chunk size.
-
-The two most obvious use cases are for ASCII armoring (which uses modulo chunking), and encryption/decryption (which, in [saltpack](https://saltpack.org)'s case uses exact chunking).
+This tool was created for situations where you, as a stream consumer, need to modify data on a chunk-by-chunk basis, e.g. BaseX armoring or cryptography.
 
 ## API
 
@@ -24,4 +16,4 @@ This tool exposes a simple TransformStream implementation with some sugar. To cr
 
 	cstream = require('keybase-chunk-stream')
 	transform_func = (x, cb) -> cb(null, x)
-	cs = new cstream.ChunkStream({transform_func, block_size :  2, exact_chunking : false})
+	cs = new cstream.ChunkStream({transform_func, block_size :  2})
