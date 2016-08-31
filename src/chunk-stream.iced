@@ -10,12 +10,11 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
   # chunk must be guaranteed to be a multiple of the block size
   _transform_chunk : (chunk, cb) ->
     blocks = []
-    await
-      count = 0
-      for i in [0...chunk.length] by @block_size
-        block = chunk[i...i+@block_size]
-        @transform_func(block, defer(err, blocks[count]))
-        ++count
+    count = 0
+    for i in [0...chunk.length] by @block_size
+      block = chunk[i...i+@block_size]
+      await @transform_func(block, defer(err, blocks[count]))
+      ++count
     blocks = Buffer.concat(blocks)
     cb(null, blocks)
 
