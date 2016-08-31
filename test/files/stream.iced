@@ -40,7 +40,7 @@ iterative_pass_test = (T, {limit, skip, transform_func, block_size, exact_chunki
 noop = (x, cb) ->
   cb(null, x)
 
-timed_test = (T, {exact_chunking}, cb) ->
+timed_test = (T, {readableObjectMode}, cb) ->
   esc = make_esc(cb, "Unknown error")
   start = new Date().getTime()
 
@@ -49,7 +49,6 @@ timed_test = (T, {exact_chunking}, cb) ->
     skip : 1987,
     transform_func : noop,
     block_size : crypto.randomBytes(1)[0],
-    exact_chunking,
     readableObjectMode : false
   }, esc(defer()))
 
@@ -58,10 +57,10 @@ timed_test = (T, {exact_chunking}, cb) ->
   console.log('Time: ' + time)
   cb(null)
 
-exports.test_inexact_streaming = (T, cb) ->
-  await timed_test(T, {exact_chunking : false}, defer(err))
+exports.test_byte_streaming = (T, cb) ->
+  await timed_test(T, {readableObjectMode : false}, defer(err))
   cb(err)
 
-exports.test_exact_streaming = (T, cb) ->
-  await timed_test(T, {exact_chunking : true}, defer(err))
+exports.test_readable_object_mode = (T, cb) ->
+  await timed_test(T, {readableObjectMode : true}, defer(err))
   cb(err)

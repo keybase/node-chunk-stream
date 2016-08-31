@@ -3,9 +3,9 @@ stream = require('stream')
 
 exports.ChunkStream = class ChunkStream extends stream.Transform
 
-  constructor : ({@transform_func, @block_size, @exact_chunking, @writableObjectMode, @readableObjectMode}) ->
+  constructor : ({@transform_func, @block_size, @readableObjectMode}) ->
     @extra = null
-    super({@writableObjectMode, @readableObjectMode})
+    super({@readableObjectMode})
 
   # chunk must be guaranteed to be a multiple of the block size
   _transform_chunk : (chunk, cb) ->

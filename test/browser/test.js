@@ -17,10 +17,9 @@
     __extends(ChunkStream, _super);
 
     function ChunkStream(_arg) {
-      this.transform_func = _arg.transform_func, this.block_size = _arg.block_size, this.exact_chunking = _arg.exact_chunking, this.writableObjectMode = _arg.writableObjectMode, this.readableObjectMode = _arg.readableObjectMode;
+      this.transform_func = _arg.transform_func, this.block_size = _arg.block_size, this.readableObjectMode = _arg.readableObjectMode;
       this.extra = null;
       ChunkStream.__super__.constructor.call(this, {
-        writableObjectMode: this.writableObjectMode,
         readableObjectMode: this.readableObjectMode
       });
     }
@@ -26435,10 +26434,11 @@ noop = function(x, cb) {
   return cb(null, x);
 };
 
-timed_test = function(T, exact, writable, cb) {
-  var end, esc, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
+timed_test = function(T, _arg, cb) {
+  var end, esc, readableObjectMode, start, time, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
+  readableObjectMode = _arg.readableObjectMode;
   esc = make_esc(cb, "Unknown error");
   start = new Date().getTime();
   (function(_this) {
@@ -26451,11 +26451,9 @@ timed_test = function(T, exact, writable, cb) {
         skip: 1987,
         transform_func: noop,
         block_size: crypto.randomBytes(1)[0],
-        exact_chunking: exact,
-        writableObjectMode: writable,
         readableObjectMode: false
       }, esc(__iced_deferrals.defer({
-        lineno: 54
+        lineno: 52
       })));
       __iced_deferrals._fulfill();
     });
@@ -26469,7 +26467,7 @@ timed_test = function(T, exact, writable, cb) {
   })(this));
 };
 
-exports.test_inexact_streaming = function(T, cb) {
+exports.test_byte_streaming = function(T, cb) {
   var err, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
@@ -26477,15 +26475,17 @@ exports.test_inexact_streaming = function(T, cb) {
     return (function(__iced_k) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral,
-        funcname: "test_inexact_streaming"
+        funcname: "test_byte_streaming"
       });
-      timed_test(T, false, false, __iced_deferrals.defer({
+      timed_test(T, {
+        readableObjectMode: false
+      }, __iced_deferrals.defer({
         assign_fn: (function() {
           return function() {
             return err = arguments[0];
           };
         })(),
-        lineno: 62
+        lineno: 60
       }));
       __iced_deferrals._fulfill();
     });
@@ -26496,7 +26496,7 @@ exports.test_inexact_streaming = function(T, cb) {
   })(this));
 };
 
-exports.test_exact_streaming = function(T, cb) {
+exports.test_readable_object_mode = function(T, cb) {
   var err, ___iced_passed_deferral, __iced_deferrals, __iced_k;
   __iced_k = __iced_k_noop;
   ___iced_passed_deferral = iced.findDeferral(arguments);
@@ -26504,42 +26504,17 @@ exports.test_exact_streaming = function(T, cb) {
     return (function(__iced_k) {
       __iced_deferrals = new iced.Deferrals(__iced_k, {
         parent: ___iced_passed_deferral,
-        funcname: "test_exact_streaming"
+        funcname: "test_readable_object_mode"
       });
-      timed_test(T, true, false, __iced_deferrals.defer({
+      timed_test(T, {
+        readableObjectMode: true
+      }, __iced_deferrals.defer({
         assign_fn: (function() {
           return function() {
             return err = arguments[0];
           };
         })(),
-        lineno: 66
-      }));
-      __iced_deferrals._fulfill();
-    });
-  })(this)((function(_this) {
-    return function() {
-      return cb(err);
-    };
-  })(this));
-};
-
-exports.test_writable_object_mode = function(T, cb) {
-  var err, ___iced_passed_deferral, __iced_deferrals, __iced_k;
-  __iced_k = __iced_k_noop;
-  ___iced_passed_deferral = iced.findDeferral(arguments);
-  (function(_this) {
-    return (function(__iced_k) {
-      __iced_deferrals = new iced.Deferrals(__iced_k, {
-        parent: ___iced_passed_deferral,
-        funcname: "test_writable_object_mode"
-      });
-      timed_test(T, true, true, __iced_deferrals.defer({
-        assign_fn: (function() {
-          return function() {
-            return err = arguments[0];
-          };
-        })(),
-        lineno: 70
+        lineno: 64
       }));
       __iced_deferrals._fulfill();
     });
