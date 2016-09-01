@@ -7,7 +7,6 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     @extra = null
     super({@readableObjectMode})
 
-  # chunk must be guaranteed to be a multiple of the block size
   _transform_chunk : (chunk, cb) ->
     blocks = []
     for i in [0...chunk.length] by @block_size
