@@ -8,17 +8,6 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     super({@readableObjectMode})
 
   _transform_chunk : (chunk, cb) ->
-    blocks = []
-    for i in [0...chunk.length] by @block_size
-      block = chunk[i...i+@block_size]
-      if block.length < @block_size
-        @extra = block
-      else
-        await @transform_func(block, defer(err, out))
-        blocks.push(out)
-    ret = Buffer.concat(blocks)
-    cb(err, ret)
-
 
   _transform : (chunk, encoding, cb) ->
     esc = make_esc(cb, "ChunkStream::_transform")
@@ -32,8 +21,18 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
       @extra = chunk
       return cb(null, new Buffer(''))
 
-    await @_transform_chunk(chunk, esc(defer(out)))
-    cb(null, out)
+    blocks = []
+
+    for i in [0...chunk.length] by @block_size
+      block = chunk[i...i+@block_size]
+      if block.length < @block_size
+        @extra = block
+      else
+        await @transform_func(block, defer(err, out))
+        blocks.push(out)
+
+    ret = Buffer.concat(blocks)
+    cb(err, ret)
 
 
   # this is to be overridden by subclasses who want to output something else after the chunking is over
