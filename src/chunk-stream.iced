@@ -7,8 +7,6 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     @extra = null
     super({@readableObjectMode})
 
-  _transform_chunk : (chunk, cb) ->
-
   _transform : (chunk, encoding, cb) ->
     esc = make_esc(cb, "ChunkStream::_transform")
     # prepend any extra
