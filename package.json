@@ -1,6 +1,6 @@
 {
   "name": "keybase-chunk-stream",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "A TransformStream implementation for applications where exact or exact-multiple chunk sizes are needed.",
   "homepage": "https://github.com/keybase/node-chunk-stream",
   "main": "./lib/main.js",
@@ -11,8 +11,10 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "browserify": "^13.1.0",
+    "iced-error": "0.0.9",
     "iced-runtime": "^1.0.3",
-    "icsify": "^0.7.0"
+    "icsify": "^0.7.0",
+    "istanbul": "^0.4.5"
   },
   "author": "Mark Cohen",
   "devDependencies": {

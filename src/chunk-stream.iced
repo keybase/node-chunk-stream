@@ -1,17 +1,14 @@
 stream = require('stream')
+{make_esc} = require('iced-error')
 
 exports.ChunkStream = class ChunkStream extends stream.Transform
 
-  constructor : ({@transform_func, @block_size, @exact_chunking, @writableObjectMode, @readableObjectMode}) ->
+  constructor : ({@transform_func, @block_size, @readableObjectMode}) ->
     @extra = null
-    super({@writableObjectMode, @readableObjectMode})
+    super({@readableObjectMode})
 
   _transform : (chunk, encoding, cb) ->
-    # if we're processing objects, just go one at a time, ignoring everything else
-    if @writableObjectMode
-      @push(@transform_func(chunk))
-      return cb()
-
+    esc = make_esc(cb, "ChunkStream::_transform")
     # prepend any extra
     if @extra?
       chunk = Buffer.concat([@extra, chunk])
@@ -20,28 +17,37 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     # if we don't have a full block, dump everything into extra and skip this round
     if chunk.length < @block_size
       @extra = chunk
-    else
-      # if we have to, call the transform function multiple times until we have less than a block size remaining
-      if @exact_chunking
-        while chunk.length >= @block_size
-          @push(@transform_func(chunk[...@block_size]))
-          chunk = chunk[@block_size...]
-        @extra = chunk
-      # if the transform function can accept chunks of length block_size*n for n \in N, just make one transform function call
-      else
-        remainder = chunk.length % @block_size
-        # chop off extra
-        if remainder isnt 0
-          @extra = chunk[chunk.length-remainder...]
-          chunk = chunk[...chunk.length-remainder]
-        @push(@transform_func(chunk))
+      return cb(null, new Buffer(''))
 
-    cb()
+    blocks = []
+
+    for i in [0...chunk.length] by @block_size
+      block = chunk[i...i+@block_size]
+      if block.length < @block_size
+        @extra = block
+      else
+        await @transform_func(block, defer(err, out))
+        blocks.push(out)
+
+    ret = Buffer.concat(blocks)
+    cb(err, ret)
+
+
+  # this is to be overridden by subclasses who want to output something else after the chunking is over
+  flush_append : (cb) ->
+    return cb(null, null)
 
   _flush : (cb) ->
-    unless @writableObjectMode
-      while @exact_chunking and @extra and @extra.length >= @block_size
-        @push(@transform_func(@extra[...@block_size]))
-        @extra = @extra[@block_size...]
-      if @extra and @extra.length isnt 0 then @push(@transform_func(@extra))
-    cb()
+    esc = make_esc(cb, "ChunkStream::_flush")
+
+    # either way, write out one final block (length guaranteed <= @block_size)
+    if @extra?.length isnt 0
+      await @transform_func(@extra, esc(defer(out_short)))
+      @push(out_short)
+
+    # allow subclasses to push something out at the very very end
+    await @flush_append(esc(defer(out_flush)))
+    if out_flush?
+      @push(out_flush)
+
+    return cb(null)

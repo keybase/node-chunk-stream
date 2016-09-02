@@ -12,7 +12,7 @@ lib/%.js: src/%.iced
 
 $(BUILD_STAMP): \
 	lib/chunk-stream.js \
-	lib/stream-to-buffer.js \
+	lib/util.js \
 	lib/main.js
 	date > $@
 
