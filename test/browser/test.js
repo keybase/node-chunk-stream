@@ -24,10 +24,8 @@
       });
     }
 
-    ChunkStream.prototype._transform_chunk = function(chunk, cb) {};
-
     ChunkStream.prototype._transform = function(chunk, encoding, cb) {
-      var block, blocks, err, esc, i, out, ret, ___iced_passed_deferral, __iced_deferrals, __iced_k;
+      var block, blocks, data, esc, i, ___iced_passed_deferral, __iced_deferrals, __iced_k;
       __iced_k = __iced_k_noop;
       ___iced_passed_deferral = iced.findDeferral(arguments);
       esc = make_esc(cb, "ChunkStream::_transform");
@@ -37,7 +35,7 @@
       }
       if (chunk.length < this.block_size) {
         this.extra = chunk;
-        return cb(null, new Buffer(''));
+        return cb(null);
       }
       blocks = [];
       (function(_this) {
@@ -73,18 +71,17 @@
                       filename: "/home/mpcsh/keybase/node-chunk-stream/src/chunk-stream.iced",
                       funcname: "ChunkStream._transform"
                     });
-                    _this.transform_func(block, __iced_deferrals.defer({
+                    _this.transform_func(block, esc(__iced_deferrals.defer({
                       assign_fn: (function() {
                         return function() {
-                          err = arguments[0];
-                          return out = arguments[1];
+                          return data = arguments[0];
                         };
                       })(),
-                      lineno: 29
-                    }));
+                      lineno: 30
+                    })));
                     __iced_deferrals._fulfill();
                   })(function() {
-                    return __iced_k(blocks.push(out));
+                    return __iced_k(typeof data !== "undefined" && data !== null ? _this.push(data) : void 0);
                   });
                 }
               })(_next);
@@ -94,14 +91,13 @@
         });
       })(this)((function(_this) {
         return function() {
-          ret = Buffer.concat(blocks);
-          return cb(err, ret);
+          return cb(null);
         };
       })(this));
     };
 
     ChunkStream.prototype.flush_append = function(cb) {
-      return cb(null, null);
+      return cb(null);
     };
 
     ChunkStream.prototype._flush = function(cb) {
@@ -125,7 +121,7 @@
                     return out_short = arguments[0];
                   };
                 })(),
-                lineno: 45
+                lineno: 46
               })));
               __iced_deferrals._fulfill();
             })(function() {
@@ -149,7 +145,7 @@
                   return out_flush = arguments[0];
                 };
               })(),
-              lineno: 49
+              lineno: 50
             })));
             __iced_deferrals._fulfill();
           })(function() {

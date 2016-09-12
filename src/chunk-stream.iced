@@ -17,30 +17,32 @@ exports.ChunkStream = class ChunkStream extends stream.Transform
     # if we don't have a full block, dump everything into extra and skip this round
     if chunk.length < @block_size
       @extra = chunk
-      return cb(null, new Buffer(''))
+      return cb(null)
 
     blocks = []
 
     for i in [0...chunk.length] by @block_size
       block = chunk[i...i+@block_size]
+      # this can only happen at the end
       if block.length < @block_size
         @extra = block
       else
-        await @transform_func(block, defer(err, out))
-        blocks.push(out)
+        # transform_func must call back with (err, data) - err is caught by esc
+        await @transform_func(block, esc(defer(data)))
+        # if transform_func calls back with null, we skip this write
+        if data?
+          @push(data)
 
-    ret = Buffer.concat(blocks)
-    cb(err, ret)
-
+    return cb(null)
 
   # this is to be overridden by subclasses who want to output something else after the chunking is over
   flush_append : (cb) ->
-    return cb(null, null)
+    return cb(null)
 
   _flush : (cb) ->
     esc = make_esc(cb, "ChunkStream::_flush")
 
-    # either way, write out one final block (length guaranteed <= @block_size)
+    # (potentially) write out a short final block (length guaranteed <= @block_size)
     if @extra?.length isnt 0
       await @transform_func(@extra, esc(defer(out_short)))
       @push(out_short)
